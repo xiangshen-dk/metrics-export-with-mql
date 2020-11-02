@@ -51,7 +51,7 @@ Shell, so that you don't need to install these packages locally.
 ### Get the sample code
 
 The sample code for this tutorial is in the
-[Google Cloud Community GitHub repository](https://github.com/GoogleCloudPlatform/community/tree/master/tutorials/export_metrics_mql).
+[GitHub repository](https://github.com/xiangshen-dk/metrics-export-with-mql).
 
 1.  Clone the repository:
 

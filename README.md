@@ -57,6 +57,10 @@ The sample code for this tutorial is in the
 
         git clone https://github.com/xiangshen-dk/metrics-export-with-mql.git
 
+1.  Go to the tutorial directory:
+
+        cd metrics-export-with-mql
+
 ## Implementation steps
 
 ### Set the environment variables
@@ -122,7 +126,7 @@ The sample code for this tutorial is in the
 
         gcloud scheduler jobs run get_metric_mql
 
-1. To verify the setup, run the following query and you should have some query results back
+1. To verify the setup, run the following query. If you have the metric data in Cloud Monitoring, they should be exported and you will have some query results
 
         bq query \
         --use_legacy_sql=false \

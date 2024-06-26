@@ -5,29 +5,31 @@ BIGQUERY_DATASET = "$BIGQUERY_DATASET"
 BIGQUERY_TABLE = "$BIGQUERY_TABLE"
 
 # Add/Update the queries for your metrics
-MQL_QUERYS = {
-# "instance/cpu/utilization":
-# """
-# fetch gce_instance::compute.googleapis.com/instance/cpu/utilization
-# | bottom 3, max(val()) | within 5m
-# """,
+# IMPORTANT: to guarantee successfully retriving data, please use a time window greater than 5 minutes
 
-"bigquery/slots/total_available":
+MQL_QUERYS = {
+"instance/cpu/utilization":
 """
-fetch global
-| metric 'bigquery.googleapis.com/slots/total_available'
-| group_by 5m, [value_total_available_mean: mean(value.total_available)]
-| every 5m | within 1h
+fetch gce_instance::compute.googleapis.com/instance/cpu/utilization
+| bottom 3, max(val()) | within 5m
 """,
 
-"bigquery/slots/allocated_for_project":
-"""
-fetch global
-| metric 'bigquery.googleapis.com/slots/allocated_for_project'
-| group_by 5m,
-    [value_allocated_for_project_mean: mean(value.allocated_for_project)]
-| every 5m | within 1h
-"""
+# "bigquery/slots/total_available":
+# """
+# fetch global
+# | metric 'bigquery.googleapis.com/slots/total_available'
+# | group_by 5m, [value_total_available_mean: mean(value.total_available)]
+# | every 5m | within 1h
+# """,
+
+# "bigquery/slots/allocated_for_project":
+# """
+# fetch global
+# | metric 'bigquery.googleapis.com/slots/allocated_for_project'
+# | group_by 5m,
+#     [value_allocated_for_project_mean: mean(value.allocated_for_project)]
+# | every 5m | within 1h
+# """
 }
 
 BASE_URL = "https://monitoring.googleapis.com/v3/projects"

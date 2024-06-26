@@ -1,40 +1,36 @@
-This tutorial describes a solution that uses Google Cloud [Monitoring Query Language(MQL)](https://cloud.google.com/monitoring/mql) to
+This tutorial describes a solution that uses the Google Cloud [Monitoring Query Language (MQL)](https://cloud.google.com/monitoring/mql) to
 export specific monitoring metrics. 
 
 The following diagram shows the high-level architecture of this solution:
 
-![export-metrics-arch](./export-metrics.png)
-
-## Objectives 
-
--  Build a solution to export specific Cloud Monitoring metrics to BigQuery using MQL
+![export-metrics-arch](https://storage.googleapis.com/gcp-community/tutorials/metrics-export-with-mql/export-metrics.png)
 
 ## Costs
 
 This tutorial uses billable components of Google Cloud, including the following:
 
--  [Google Cloud Functions](https://cloud.google.com/functions/pricing)
--  [Google Cloud Pub/Sub](https://cloud.google.com/pubsub/pricing)
--  [Google Cloud Scheduler](https://cloud.google.com/scheduler/pricing)
--  [Google BigQuery](https://cloud.google.com/bigquery/pricing)
+-  [Cloud Functions](https://cloud.google.com/functions/pricing)
+-  [Pub/Sub](https://cloud.google.com/pubsub/pricing)
+-  [Cloud Scheduler](https://cloud.google.com/scheduler/pricing)
+-  [BigQuery](https://cloud.google.com/bigquery/pricing)
 
 Use the [pricing calculator](https://cloud.google.com/products/calculator) to generate a cost estimate based on your projected usage.
 
 ## Before you begin
 
 For this tutorial, you need a Google Cloud [project](https://cloud.google.com/resource-manager/docs/cloud-platform-resource-hierarchy#projects). You can create a 
-new project or select a project that you already created. When you finish this tutorial, you can avoid continued billing by deleting the resources you created. 
-To make cleanup easiest, you may want to create a new project for this tutorial, so that you can delete the project when you're done. For details, see the 
-"Cleaning up" section at the end of the tutorial.
+new project or select a project that you have already created. When you finish this tutorial, you can avoid continued billing by deleting the resources that you
+created. To make cleanup easiest, you may want to create a new project for this tutorial, so that you can delete the project when you're done. For details, see
+the  "Cleaning up" section at the end of the tutorial.
 
-1.  [Select or create a Google Cloud project.](https://cloud.console.google.com/projectselector2/home/dashboard)
+1.  [Select or create a Google Cloud project.](https://console.cloud.google.com/projectselector2/home/dashboard)
 
 1.  [Enable billing for your project.](https://support.google.com/cloud/answer/6293499#enable-billing)
 
-1.  [Enable the Cloud Functions, Cloud Scheduler, Cloud PubSub, and BigQuery.](https://console.cloud.google.com/flows/enableapi?apiid=cloudfunctions.googleapis.com,cloudscheduler.googleapis.com,pubsub.googleapis.com,bigquery.googleapis.com)  
+1.  [Enable the Cloud Functions, Cloud Scheduler, Pub/Sub, Cloud Build, and BigQuery APIs.](https://console.cloud.google.com/flows/enableapi?apiid=cloudfunctions.googleapis.com,cloudscheduler.googleapis.com,pubsub.googleapis.com,bigquery.googleapis.com,cloudbuild.googleapis.com)
 
 1.  Make sure that you have either a project [owner or editor role](https://cloud.google.com/iam/docs/understanding-roles#primitive_roles), or sufficient 
-    permissions to use the services listed in the previous section.
+    permissions to use the services listed above.
 
 ## Using Cloud Shell
 
@@ -51,15 +47,15 @@ Shell, so that you don't need to install these packages locally.
 ### Get the sample code
 
 The sample code for this tutorial is in the
-[GitHub repository](https://github.com/xiangshen-dk/metrics-export-with-mql).
+[Google Cloud Community GitHub repository](https://github.com/GoogleCloudPlatform/community/tree/master/tutorials/metrics-export-with-mql).
 
 1.  Clone the repository:
 
-        git clone https://github.com/xiangshen-dk/metrics-export-with-mql.git
+        git clone https://github.com/GoogleCloudPlatform/community.git
 
 1.  Go to the tutorial directory:
 
-        cd metrics-export-with-mql
+        cd community/tutorials/metrics-export-with-mql
 
 ## Implementation steps
 
@@ -72,21 +68,26 @@ The sample code for this tutorial is in the
 
 ### Update configuration
 
-1. Update the variables in the config file
+1.  Update the variables in the configuration file:
 
         envsubst < config-template.py > config.py
-    If you don't have `envsubst` installed, you can open the config-template.py file, update the variables and save it as config.py.
+        
+    If you don't have `envsubst` installed, you can open the `config-template.py` file, update the variables, and save it as `config.py`.
 
-1. Add/Update the MQL queris as needed in the config.py file. You can find examples in the [doc](https://cloud.google.com/monitoring/mql/examples).
+1.  Add and update the MQL queries as needed in the `config.py` file. You can find examples in the 
+    [MQL documentation](https://cloud.google.com/monitoring/mql/examples).
 
-### Create the exporting pipeline
+### Create the export pipeline
 
-1.  Create a BigQuery Dataset and then a table using the schema JSON files.
+1.  Create a BigQuery dataset:
 
         bq mk $BIGQUERY_DATASET
+        
+1.  Create a table using the schema JSON file:
+
         bq mk --table ${BIGQUERY_DATASET}.${BIGQUERY_TABLE}  ./bigquery_schema.json
 
-1. Create a service account for the export cloud function
+1.  Create a service account for the export Cloud Function:
 
         gcloud iam service-accounts create mql-export-metrics \
             --display-name "MQL export metrics SA" \
@@ -94,18 +95,18 @@ The sample code for this tutorial is in the
 
         export EXPORT_METRIC_SERVICE_ACCOUNT=mql-export-metrics@$PROJECT_ID.iam.gserviceaccount.com 
 
-1. Assign IAM permissions to the service account
+1.  Assign IAM roles to the service account:
 
         gcloud projects add-iam-policy-binding  $PROJECT_ID --member="serviceAccount:$EXPORT_METRIC_SERVICE_ACCOUNT" --role="roles/compute.viewer"
         gcloud projects add-iam-policy-binding  $PROJECT_ID --member="serviceAccount:$EXPORT_METRIC_SERVICE_ACCOUNT" --role="roles/monitoring.viewer"
         gcloud projects add-iam-policy-binding  $PROJECT_ID --member="serviceAccount:$EXPORT_METRIC_SERVICE_ACCOUNT" --role="roles/bigquery.dataEditor"
         gcloud projects add-iam-policy-binding  $PROJECT_ID --member="serviceAccount:$EXPORT_METRIC_SERVICE_ACCOUNT" --role="roles/bigquery.jobUser"
 
-1. Create the Pub/Sub topic
+1.  Create the Pub/Sub topic:
 
         gcloud pubsub topics create $PUBSUB_TOPIC
 
-1. Deploy the Cloud Function
+1.  Deploy the Cloud Function:
 
         gcloud functions deploy mql_export_metrics \
         --trigger-topic $PUBSUB_TOPIC \
@@ -113,20 +114,22 @@ The sample code for this tutorial is in the
         --entry-point export_metric_data \
         --service-account=$EXPORT_METRIC_SERVICE_ACCOUNT
 
-1. Deploy the Cloud Scheduler job and run it every 5 minutes
+1. Deploy the Cloud Scheduler job with a schedule to run it every 5 minutes:
 
         gcloud scheduler jobs create pubsub get_metric_mql \
         --schedule "*/5 * * * *" \
         --topic $PUBSUB_TOPIC \
         --message-body "Exporting metric..."
 
+   If the command fails and requests a location, you can add the location flag with your current region. For example, you can use `--location us-central1`.
+
 ## Verify the result
 
-1. Manually invoke the scheduled job
+1.  Manually invoke the scheduled job:
 
         gcloud scheduler jobs run get_metric_mql
 
-1. To verify the setup, run the following query. If you have the metric data in Cloud Monitoring, they should be exported and you will have some query results
+1.  Verify the setup by running the following query:
 
         bq query \
         --use_legacy_sql=false \
@@ -136,8 +139,10 @@ The sample code for this tutorial is in the
         ${PROJECT_ID}.${BIGQUERY_DATASET}.${BIGQUERY_TABLE}
         LIMIT 10
         "
+        
+    If you have metrics data in Cloud Monitoring, they should be exported, and you will receive some query results.
 
-1. Below is an example if you export the metric 'compute.googleapis.com/instance/cpu/utilization'
+    Here is an example if you export the metric `compute.googleapis.com/instance/cpu/utilization`:
 
         bq query \
         --use_legacy_sql=false \
@@ -157,7 +162,7 @@ The sample code for this tutorial is in the
         ORDER BY extract_date
         "
 
-1.  Alternatively, you can open the [BigQuery console](https://console.cloud.google.com/bigquery) and query the export data there
+Alternatively, you can open the [BigQuery console](https://console.cloud.google.com/bigquery) and query the export data there.
 
 
 ## Cleaning up
